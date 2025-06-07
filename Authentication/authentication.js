@@ -6,8 +6,27 @@ const app = express();
 const users = []
 
 
+function auth(req, res, next) {
+    const token = req.headers.authorization;
 
-app.use(express.json());
+    if (token) {
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                res.status(401).send({
+                    message: "Unauthorized"
+                })
+            } else {
+                req.user = decoded;
+                next();
+            }
+        })
+    } else {
+        res.status(401).send({
+            message: "Unauthorized"
+        })
+    }
+}
+
 app.post("/signup", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -59,31 +78,12 @@ app.post("/signin", (req, res) => {
 });
 
 
-app.get("/me", (req, res) => {
-    const token = req.headers.token; //jwt
-    const decodedInformation = jwt.verify(token,JWT_SECRET);
-    const information = decodedInformation.username
+app.get("/me", auth, (req, res) => {
+    const user = req.user;
 
-    let foundUser = null;
-
-    for(let i=0;i<users.length;i++)
-    {
-        if(users[i].username == username )
-        {
-            foundUser= users[i];
-        }
-    }
-   
-    if (foundUser) {
-        res.json({
-            username: foundUser.username,
-            password : foundUser.password
-        })
-    } else {
-        res.json({
-            message: "Token invalid"
-        })
-    }
+    res.send({
+        username: user.username
+    })
 })
 
 
